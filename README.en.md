@@ -404,7 +404,7 @@ out = if test true {
 print out               -- "is true"
 ```
 
-### Switch Operator
+### Operator Switc
 
 Uses the `case` keyword for branches and `else` for the default value:
 
