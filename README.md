@@ -1,4 +1,8 @@
-# Справочник по язык Lattelua
+[![ru](https://img.shields.io/badge/lang-ru-red.svg)](https://github.com/mzujev/lattelua/blob/main/README.md)
+[![en](https://img.shields.io/badge/lang-en-green.svg)](https://github.com/mzujev/lattelua/blob/main/README.en.md)
+---
+
+# Справочник по языку Lattelua
 
 **Lattelua** — это динамический скриптовый язык, компилируемый в Lua. Он основан на семантике(Парсер/Лексер) [MoonScript](https://moonscript.org/), но использует JS-подобный синтаксис, что обеспечивает свободное форматирование кода и легкость минификации.
 
@@ -28,7 +32,7 @@
      * [Генераторы списков](#Генераторы-списков)
      * [Генераторы таблиц](#Генераторы-таблиц)
 4. [Управляющие конструкции](#Управляющие-конструкции)
-   - [If / Else / Unless](#If/Else/Unless)
+   - [If/Else/Unless](#If-Else-Unless)
    - [Оператор Switch](#Оператор-Switch)
 5. [Циклы](#Циклы)
 6. [Линейные декораторы](#Линейные-декораторы)
@@ -361,7 +365,7 @@ copy = {k,v for k,v in pairs t when k != "gender"}
 
 ### Управляющие конструкции
 
-### If/Else/Unless
+### If Else Unless
 
 ```moonscript
 if x > 10 {  

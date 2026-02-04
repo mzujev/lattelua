@@ -2,7 +2,7 @@ package = "lattelua"
 version = "0.5.1-1"
 
 source = {
-	url = "git://github.com/mzujev/lattelua.git"
+	url = "git+https://github.com/mzujev/lattelua.git"
 }
 
 description = {
