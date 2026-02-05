@@ -587,8 +587,7 @@ static int pmain (lua_State *L) {
 	lua_getglobal(L, "require");
 	lua_pushstring(L, "lattelua");
 	if (lua_pcall(L, 1, 1, 0) != 0) {
-		l_message(progname, "error: lattelua library not found!");
-		return 1; 
+		return report(L, 1);
 	} else {
 		lua_setglobal(L, "lattelua");
 	}
