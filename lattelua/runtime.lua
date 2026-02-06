@@ -1,3 +1,6 @@
+loadstring = loadstring or load
+unpack = unpack or table.unpack
+pack = pack or table.pack
 try = function(f, t)
   local r
   if type(f) == 'function' then

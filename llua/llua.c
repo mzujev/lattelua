@@ -22,6 +22,70 @@
 #define LLUA_RELEASE		"LLua 5.1.5"
 #define LLUA_COPYRIGHT	"Copyright (C) 2017-2026 by ZMC"
 
+#if LUA_VERSION_NUM > 501
+
+#define lua_strlen(L,i)		luaL_len(L, (i))
+
+#if defined(LUA_USE_READLINE)
+#include <stdio.h>
+#include <readline/readline.h>
+#include <readline/history.h>
+#define lua_readline(L,b,p)	((void)L, ((b)=readline(p)) != NULL)
+#define lua_saveline(L,idx) \
+	if (lua_strlen(L,idx) > 0)  /* non-empty line? */ \
+	  add_history(lua_tostring(L, idx));  /* add it to history */
+#define lua_freeline(L,b)	((void)L, free(b))
+#else
+#define lua_readline(L,b,p)	\
+	((void)L, fputs(p, stdout), fflush(stdout),  /* show prompt */ \
+	fgets(b, LUA_MAXINPUT, stdin) != NULL)  /* get line */
+#define lua_saveline(L,idx)	{ (void)L; (void)idx; }
+#define lua_freeline(L,b)	{ (void)L; (void)b; }
+#endif
+
+#endif
+
+#if !defined(LUA_PROMPT)
+#define LUA_PROMPT		"> "
+#define LUA_PROMPT2		">> "
+#endif
+
+#if !defined(LUA_MAXINPUT)
+#define LUA_MAXINPUT		512
+#endif
+
+#if !defined(LUA_INIT)
+#define LUA_INIT	"LUA_INIT"
+#endif
+
+/*
+** lua_stdin_is_tty detects whether the standard input is a 'tty' (that
+** is, whether we're running lua interactively).
+*/
+#if !defined(lua_stdin_is_tty)	/* { */
+
+#if defined(LUA_USE_POSIX)	/* { */
+
+#include <unistd.h>
+#define lua_stdin_is_tty()	isatty(0)
+
+#elif defined(LUA_USE_WINDOWS)	/* }{ */
+
+#include <io.h>
+#include <windows.h>
+
+#define lua_stdin_is_tty()	_isatty(_fileno(stdin))
+
+#else				/* }{ */
+
+/* ISO C definition */
+#define lua_stdin_is_tty()	1  /* assume stdin is a tty */
+
+#endif				/* } */
+
+#endif				/* } */
+
+
 
 static int has_c = 0;
 static lua_State *globalL = NULL;
@@ -184,7 +248,7 @@ static int report (lua_State *L, int status) {
 
 
 static int traceback (lua_State *L) {
-	lua_getfield(L, LUA_GLOBALSINDEX, "debug");
+	lua_getglobal(L, "debug");
 	if (!lua_istable(L, -1)) {
 		lua_pop(L, 1);
 		return 1;
@@ -332,7 +396,7 @@ static int dolibrary (lua_State *L, const char *name) {
 
 static const char *get_prompt (lua_State *L, int firstline) {
 	const char *p;
-	lua_getfield(L, LUA_GLOBALSINDEX, firstline ? "_PROMPT" : "_PROMPT2");
+	lua_getglobal(L, firstline ? "_PROMPT" : "_PROMPT2");
 	p = lua_tostring(L, -1);
 	if (p == NULL) p = (firstline ? LUA_PROMPT : LUA_PROMPT2);
 	lua_pop(L, 1);  /* remove global */
@@ -623,14 +687,16 @@ static int pmain (lua_State *L) {
 int main (int argc, char **argv) {
 	int status;
 	struct Smain s;
-	lua_State *L = lua_open();  /* create state */
+	lua_State *L = luaL_newstate();  /* create state */
 	if (L == NULL) {
 		l_message(argv[0], "cannot create state: not enough memory");
 		return EXIT_FAILURE;
 	}
 	s.argc = argc;
 	s.argv = argv;
-	status = lua_cpcall(L, &pmain, &s);
+	lua_pushcfunction(L, &pmain);  /* to call 'pmain' in protected mode */
+	lua_pushlightuserdata(L, &s); /* 1st argument */
+	status = lua_pcall(L, 1, 1, 0);  /* do the call */
 	report(L, status);
 	lua_close(L);
 	return (status || s.status) ? EXIT_FAILURE : EXIT_SUCCESS;
