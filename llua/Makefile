@@ -5,9 +5,10 @@ CWARNS = -pedantic -Waggregate-return -Wcast-align \
          -Wsign-compare -Wstrict-prototypes -Wundef -Wwrite-strings
 
 CC = gcc
-CFLAGS = -Wall -g -pedantic -O2 -DLUA_USE_LINUX -I/usr/include/$(LUA)
 LDFLAGS = -Wl,-E
+TAGS ?= -DLUA_USE_LINUX -DLUA_USE_READLINE
 LIBS = -lm -ldl -lreadline -lhistory -lncurses -l$(LUA)
+CFLAGS = -Wall -g -pedantic -O2 $(TAGS) -I/usr/include/$(LUA)
 
 TARGET = llua
 OBJ = llua.o
