@@ -24,6 +24,7 @@
 
 #if LUA_VERSION_NUM > 501
 
+#define LUA_QL(x)	"'" x "'"
 #define lua_strlen(L,i)		luaL_len(L, (i))
 
 #if defined(LUA_USE_READLINE)
