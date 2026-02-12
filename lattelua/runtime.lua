@@ -27,16 +27,17 @@ do
   local _obj_0 = table
   concat, insert, remove = _obj_0.concat, _obj_0.insert, _obj_0.remove
 end
-local split, dump, get_options, unpack
+local split, dump, get_options, unpack, setfenv
 do
   local _obj_0 = require("lattelua.util")
+  setfenv = setfenv or _obj_0.setfenv
   split, dump, get_options, unpack = _obj_0.split, _obj_0.dump, _obj_0.get_options, _obj_0.unpack
 end
 local lua = {
   loadstring = loadstring,
   load = load
 }
-local dirsep, line_tables, create_lattepath, to_lua, latte_loader, loadstring, readfile, loadfile, dofile, insert_loader, remove_loader
+local lattelua, dirsep, line_tables, create_lattepath, to_lua, latte_loader, loadstring, readfile, loadfile, dofile, insert_loader, remove_loader
 dirsep = "/"
 line_tables = require("lattelua.line_tables")
 create_lattepath = function(package_path)
@@ -130,22 +131,11 @@ readfile = function(fname, ...)
   file:close()
   return text, nil
 end
---[[
 loadfile = function(fname, ...)
-  local file, err = io.input(fname or io.stdin)
-  if not (file) then
+  local text, err = readfile(fname)
+  if not text then
     return nil, err
   end
-  local text = assert(file:read("*a"))
-  file:close()
-  return loadstring(text, "@" .. tostring(fname), ...)
-end
---]]
-loadfile = function(fname, ...)
-	local text, err = readfile(fname)
-	if not text then
-		return nil, err
-	end
   return loadstring(text, "@" .. tostring(fname), ...)
 end
 dofile = function(...)
@@ -179,6 +169,24 @@ remove_loader = function()
   end
   return false
 end
+setupenv = function(...)
+  local i = 1
+  local mt = {}
+  local stack = ... or 2
+  local env = debug.getinfo(stack - 1, 'f') or {}
+
+  while true do
+    local name, value = debug.getlocal(stack, i)
+    if not name then break end
+    mt[name] = value
+    i = i + 1
+  end
+  for _, fn in pairs(env) do
+    setfenv(fn, setmetatable(mt, {
+      __index = _G,
+    }))
+  end
+end
 lattelua = setmetatable({
   _NAME = "lattelua",
   insert_loader = insert_loader,
@@ -187,18 +195,26 @@ lattelua = setmetatable({
   latte_loader = latte_loader,
   dirsep = dirsep,
   dofile = dofile,
-	readfile = readfile,
+  readfile = readfile,
   loadfile = loadfile,
   loadstring = loadstring,
   create_lattepath = create_lattepath
 },{
-	__call = function(t, code)
-  local fn, err = loadstring(code)
-  if "function" ~= type(fn) then
-    return error(err)
+  __call = function(t, code)
+    local fn, err = loadstring(code)
+    if "function" ~= type(fn) then
+      return error(err)
+    else
+      setfenv(fn, setmetatable(
+        {
+          setupenv = setupenv
+        },
+        {__index = _G})
+      )
+    end
+
+    return fn()
   end
-	return fn()
-end
 })
 
 return lattelua
