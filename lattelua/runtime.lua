@@ -37,7 +37,7 @@ local lua = {
   loadstring = loadstring,
   load = load
 }
-local lattelua, dirsep, line_tables, create_lattepath, to_lua, latte_loader, loadstring, readfile, loadfile, dofile, insert_loader, remove_loader
+local lattelua, dirsep, line_tables, create_lattepath, to_lua, latte_loader, loadstring, readfile, loadfile, dofile, insert_loader, remove_loader, getupenv
 dirsep = "/"
 line_tables = require("lattelua.line_tables")
 create_lattepath = function(package_path)
@@ -169,16 +169,19 @@ remove_loader = function()
   end
   return false
 end
-setupenv = function(...)
+getupenv = function(upstack, stack)
   local i = 1
   local mt = {}
-  local stack = ... or 2
-  local env = debug.getinfo(stack - 1, 'f') or {}
+  local upstack = upstack or 3
+  local stack = stack and stack or (upstack - 1)
+  local env = debug.getinfo(stack, 'f') or {}
 
   while true do
-    local name, value = debug.getlocal(stack, i)
+    local name, value = debug.getlocal(upstack, i)
     if not name then break end
-    mt[name] = value
+    if name:sub(1, 1) ~= "(" then
+      mt[name] = value
+    end
     i = i + 1
   end
   for _, fn in pairs(env) do
@@ -207,7 +210,7 @@ lattelua = setmetatable({
     else
       setfenv(fn, setmetatable(
         {
-          setupenv = setupenv
+          getupenv = getupenv
         },
         {__index = _G})
       )
