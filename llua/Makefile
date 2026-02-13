@@ -1,4 +1,7 @@
-LUA ?= lua5.1
+
+LUA_VER := $(shell lua -e 'print(("lua%s"):format(_VERSION:match("%d+%.%d+")))')
+
+LUA ?= $(LUA_VER)
 
 CWARNS = -pedantic -Waggregate-return -Wcast-align \
          -Wmissing-prototypes -Wpointer-arith -Wshadow \
