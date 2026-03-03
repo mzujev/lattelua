@@ -757,6 +757,60 @@ class Animal {
 class Dog extends Animal{}
 ```
 
+Концепция ООП в [MoonScript](https://moonscript.org/) не допускает множественное наследование, в `LatteLua` этот механизм поддерживается через «встраивание».
+Каждый класс имеет `private`-метод `implement`, который наследует поля и методы встраиваемого класса и использует их так, как если бы они были его собственными.
+
+```moonscript
+class Animal {
+	setname: (n)=>{
+		@name = n
+	}
+	getname: =>{
+		@name
+	}
+	speak: =>
+		print "#{name} makes sound"
+	}
+}
+
+class Alias {
+	setalias: (alias) => {
+		@aliases = alias
+	}
+	getalias: =>{
+		@aliases
+	}
+}
+
+class Dog {
+	speak: =>{
+		print "#{@getname!}, niknamed '#{@getalias!}', says: Woof!"
+	}
+	implement self, Animal, Alias
+}
+
+class Cat {
+	speak: =>{
+		print "#{@getname!}, niknamed '#{@getalias!}', says: Meow!"
+	}
+	implement self, Animal, Alias
+}
+
+c, d = Cat!, Dog!
+
+c::setname "Misty"
+c::setalias "Shadow"
+
+d::setname "Rex"
+d::setalias "Good Boy"
+
+c::speak!                    --Misty, niknamed 'Shadow', says: Meow!
+d::speak!                    --Rex, niknamed 'Good Boy', says: Woof!
+```
+
+Важно: «встраивание» не является наследованием — это форма композиции, при встраивании не работают механизмы `extends` и не создаётся новая область видимости, но замыкания всё равно общие.
+
+
 ### With оператор
 
 Блок `with` позволяет сократить код при множественных обращениях к одному объекту. Внутри блока, свойства начинающиеся с `.` или методы с `::`, относятся к целевому объекту.

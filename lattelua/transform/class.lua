@@ -122,7 +122,26 @@ return function(self, node, ret, parent_assign)
   cls_super = function(...)
     return transform_super(cls_name, false, ...)
   end
-  local statements = { }
+  local implement
+  do
+    local parser = require "lattelua.parse"
+    local tree = parser.lexer[[
+      implement = (...)=>{
+        for i, cls in ipairs {...} {
+          for k, obj in pairs cls.__base {
+            continue if k::match "^__.+"
+            continue if @__base[k]
+            @__base[k] = obj
+          }
+        }
+      }
+    ]]
+
+    if type(tree) == 'table' and tree[1] then
+      implement = tree[1]
+    end
+  end
+  local statements = { implement }
   local properties = { }
   for _index_0 = 1, #body do
     local item = body[_index_0]

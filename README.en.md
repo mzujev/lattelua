@@ -756,6 +756,60 @@ class Animal {
 class Dog extends Animal{}
 ```
 
+The OOP concept in [MoonScript](https://moonscript.org/) does not allow multiple inheritance, in `LatteLua` this mechanism is supported through «embedding».
+Each class has a `private` method `implement`, which inherits the fields and methods of the embedded class and uses them as if they were its own.
+
+```moonscript
+class Animal {
+	setname: (n)=>{
+		@name = n
+	}
+	getname: =>{
+		@name
+	}
+	speak: =>
+		print "#{name} makes sound"
+	}
+}
+
+class Alias {
+	setalias: (alias) => {
+		@aliases = alias
+	}
+	getalias: =>{
+		@aliases
+	}
+}
+
+class Dog {
+	speak: =>{
+		print "#{@getname!}, niknamed '#{@getalias!}', says: Woof!"
+	}
+	implement self, Animal, Alias
+}
+
+class Cat {
+	speak: =>{
+		print "#{@getname!}, niknamed '#{@getalias!}', says: Meow!"
+	}
+	implement self, Animal, Alias
+}
+
+c, d = Cat!, Dog!
+
+c::setname "Misty"
+c::setalias "Shadow"
+
+d::setname "Rex"
+d::setalias "Good Boy"
+
+c::speak!                    --Misty, niknamed 'Shadow', says: Meow!
+d::speak!                    --Rex, niknamed 'Good Boy', says: Woof!
+```
+
+Important: «embedding» is not inheritance - it is a form of composition, and embedding does not use the `extends` mechanism and does not create a new scope, but the closures are still shared.
+
+
 ### With operator
 
 The `with` block allows you to shorten your code when accessing a single object multiple times. Within the block, properties beginning with `.` or methods beginning with `::` are assigned to the target object.
