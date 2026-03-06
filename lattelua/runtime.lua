@@ -1,25 +1,6 @@
 loadstring = loadstring or load
 unpack = unpack or table.unpack
 pack = pack or table.pack
-try = function(f, t)
-  local r
-  if type(f) == 'function' then
-    r = { pcall(f) }
-  end
-
-  if not r[1] and type(t['catch']) == 'function' then
-    t['catch'](r[2] or 'Runtime Error')
-    if type(t['finally']) ~= 'function' then
-      return r[2] or 'Rintime Error' 
-    end
-  end
-
-  if type(t['finally']) == 'function' then
-    t['finally'](r)
-  end
-
-  return unpack(r, 2)
-end
 local compile = require("lattelua.compile")
 local parse = require("lattelua.parse")
 local concat, insert, remove

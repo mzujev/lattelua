@@ -93,9 +93,74 @@ show_line_position = function(str, pos, context)
   out = table.concat(out)
   return (out:gsub("\n*$", ""))
 end
+local try
+try = function(code, catch, finally)
+  --[=[
+        ((f, t)->{
+          r = {}
+          if type(f) == 'function' {
+            r = { pcall(f) }
+          }
+
+          if not r[1] and type(t['catch']) == 'function' {
+            t['catch'](r[2] or 'Runtime Error')
+            if type(t['finally']) ~= 'function' {
+              return r[2] or 'Runtime Error'
+            }
+          }
+
+          if type(t['finally']) == 'function' {
+            t['finally'](r)
+          }
+
+          unpack(r, 2)
+        })(->{return}, {
+          catch: =>{return},
+          finally: =>{return}
+        })
+  --]=]
+  return {"chain",{"parens",{"fndef", {{"f"},{"t"}},{},"slim",{
+    {"assign",{{"ref","r"}},{{"table",{}}}},
+    {"if",{"exp",{"chain",{"ref","type"},{"call",{{"ref","f"}}}},"==",{"string","'","function"}},{
+      {"assign",{{"ref","r"}},{{"table",{{{"chain",{"ref","pcall"},{"call",{{"ref","f"}}}}}}}}}
+    }},
+    {"if",{"not",{"exp",{"chain",{"ref","r"},{"index",{"number","1"}}},"and",{"chain",{"ref","type"},{"call",{{"chain",{"ref","t"},{"index",{"string","'","catch"}}}}}},"==",{"string","'","function"}}},{
+      {"chain",{"ref","t"},{"index",{"string","'","catch"}},{"call",{{"exp",{"chain",{"ref","r"},{"index",{"number","2"}}},"or",{"string","'","Runtime Error"}}}}},
+      {"if",{"exp",{"chain",{"ref","type"},{"call",{{"chain",{"ref","t"},{"index",{"string","'","finally"}}}}}},"~=",{"string","'","function"}},{
+        {"return",{"explist",{"exp",{"chain",{"ref","r"},{"index",{"number","2"}}},"or",{"string","'","Runtime Error"}}}}
+      }}
+    }},
+    {"if",{"exp",{"chain",{"ref","type"},{"call",{{"chain",{"ref","t"},{"index",{"string","'","finally"}}}}}},"==",{"string","'","function"}},{
+      {"chain",{"ref","t"},{"index",{"string","'","finally"}},{"call",{{"ref","r"}}}}
+    }},
+    {"chain",{"ref","unpack"},{"call",{{"ref","r"},{"number","2"}}}}
+  }}},{"call",{
+    {"fndef",{},{},"slim",code or {}},
+    {"table",{
+      {{"key_literal","catch"},{"fndef",{},{},"fat",catch or {}}},
+      {{"key_literal","finally"},{"fndef",{},{},"fat",finally or {}}}
+    }}
+  }}}
+end
 local mark
 mark = function(name)
   return function(...)
+    if name == "exception" then
+      local buff = {...}
+      local code, catch, finally
+
+      for i = 1, #buff do
+        if type(buff[i]) == 'table' and tostring(buff[i][1]) == 'catch' then
+          catch = buff[i][2]
+        elseif type(buff[i]) == 'table' and tostring(buff[i][1]) == 'finally' then
+          finally = buff[i][2]
+        else
+          code = buff[i]
+        end
+      end
+
+      return try(code, catch, finally)
+    end
     return {
       name,
       ...

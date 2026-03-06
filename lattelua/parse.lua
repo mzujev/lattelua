@@ -96,6 +96,9 @@ local build_grammar = wrap_env(debug_grammar, function(root)
     SwitchBlock = EmptyLine ^ 0 * Ct(SwitchCase * (Break ^ 1 * SwitchCase) ^ 0 * (Break ^ 1 * SwitchElse) ^ -1),
     SwitchCase = key("case") * Ct(ExpList) * Body / mark("case"),
     SwitchElse = key("else") * Body / mark("else"),
+    Exception = key("try") * sym("{") * Body * Catch ^ -1 * Finally ^ -1 * White * sym("}") / mark("exception"),
+    Catch = (Break * EmptyLine ^ 0 * CheckLine) ^ -1 * sym("}") * key("catch") * sym("{") * Body / mark("catch"),
+    Finally = (Break * EmptyLine ^ 0 * CheckLine) ^ -1 * sym("}") * key("finally") * sym("{") * Body / mark("finally"),
     IfCond = Exp * Assign ^ -1 / format_single_assign,
     IfElse = (Break * EmptyLine ^ 0 * CheckLine) ^ -1 * sym("}") * key("else") * sym("{") * Body / mark("else"),
     IfElseIf = (Break * EmptyLine ^ 0 * CheckLine) ^ -1 * sym("}") * key("elseif") * pos(IfCond) * sym("{") * Body / mark("elseif"),
@@ -112,14 +115,14 @@ local build_grammar = wrap_env(debug_grammar, function(root)
     CompForEach = key("for") * Ct(AssignableNameList) * key("in") * (sym("*") * Exp / mark("unpack") + Exp) / mark("foreach"),
     CompFor = key("for" * Name * sym("=") * Ct(Exp * sym(",") * Exp * (sym(",") * Exp) ^ -1) / mark("for")),
     CompClause = CompFor + CompForEach + key("when") * Exp / mark("when"),
-    Assign = sym("=") * (Ct(With + If + Switch) + Ct(TableBlock + ExpListLow)) / mark("assign"),
+    Assign = sym("=") * (Ct(With + Exception + If + Switch) + Ct(TableBlock + ExpListLow)) / mark("assign"),
     Update = ((sym("..=") + sym("+=") + sym("-=") + sym("*=") + sym("/=") + sym("%=") + sym("or=") + sym("and=") + sym("&=") + sym("|=") + sym(">>=") + sym("<<=")) / trim) * Exp / mark("update"),
     CharOperators = Space * C(S("+-*/%^><|&")),
     WordOperators = op("or") + op("and") + op("<=") + op(">=") + op("~=") + op("!=") + op("==") + op("..") + op("<<") + op(">>") + op("//"),
     BinaryOperator = (WordOperators + CharOperators) * SpaceBreak ^ 0,
     Assignable = Cmt(Chain, check_assignable) + Name + SelfName,
     Exp = Ct(Value * (BinaryOperator * Value) ^ 0) / flatten_or_mark("exp"),
-    SimpleValue = If + Unless + Switch + With + ClassDecl + ForEach + For + While + Cmt(Do, check_do) + sym("-") * -SomeSpace * Exp / mark("minus") + sym("#") * Exp / mark("length") + sym("~") * Exp / mark("bitnot") + key("not") * Exp / mark("not") + TblComprehension + TableLit + Comprehension + FunLit + Num,
+    SimpleValue = If + Unless + Switch + With + ClassDecl + Exception + ForEach + For + While + Cmt(Do, check_do) + sym("-") * -SomeSpace * Exp / mark("minus") + sym("#") * Exp / mark("length") + sym("~") * Exp / mark("bitnot") + key("not") * Exp / mark("not") + TblComprehension + TableLit + Comprehension + FunLit + Num,
     ChainValue = (Chain + Callable) * Ct(InvokeArgs ^ -1) / join_chain,
     Value = pos(SimpleValue + Ct(KeyValueList) / mark("table") + ChainValue + String),
     SliceValue = Exp,
@@ -162,7 +165,7 @@ local build_grammar = wrap_env(debug_grammar, function(root)
     NameOrDestructure = Name + TableLit,
     AssignableNameList = NameOrDestructure * (sym(",") * NameOrDestructure) ^ 0,
     ExpList = Exp * (sym(",") * Exp) ^ 0,
-    ExpListLow = Exp * ((sym(",") + sym(";")) * Exp) ^ 0,
+    ExpListLow = Exp * (sym(",") * Exp) ^ 0,
     InvokeArgs =  Cmt(#BracesContext, function(str, pos)
       local cause = true
       local line = str:sub(pos):gmatch("([^\n\r]*)")()
@@ -250,12 +253,9 @@ preprocess = function(str)
   local LS = P("[[") * (1 - P("]]")) ^ 0 * P("]]")
   -- targets
   local SEMICOLON = P(";") / "\n"
-  local TRY = P("try->") / "try ->" + P("try") * White * P("{") / "try -> {"
-  local CATCH = P("}") * White * P("catch:") * White * P("=>") / "}, catch: =>" + P("}") * White * P("catch") * White * P("{") / "}, catch: => {"
-  local FINALLY = P("}") * White * P("finally:") * White * P("=>") / "}, finally: =>" + P("}") * White * P("finally") * White * P("{") / "}, finally: => {"
   -- any
   local ANY = P(1)
-  local Preprocess = lpeg.Cs((C(DQ + SQ + LS + Comment) + SEMICOLON + TRY + CATCH + FINALLY + C(ANY)) ^ 0)
+  local Preprocess = lpeg.Cs((C(DQ + SQ + LS + Comment) + SEMICOLON + C(ANY)) ^ 0)
 
   return Preprocess:match(str)
 end
